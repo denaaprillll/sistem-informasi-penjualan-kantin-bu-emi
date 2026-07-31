@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Waktu pembuatan: 31 Jul 2026 pada 12.02
+-- Waktu pembuatan: 31 Jul 2026 pada 21.38
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.5.5
 
@@ -21,64 +21,59 @@ SET time_zone = "+00:00";
 -- Database: `db_kantin_bu_emi`
 --
 
-
 DELIMITER $$
-
-DROP PROCEDURE IF EXISTS tambah_menu$$
-CREATE PROCEDURE tambah_menu(
-    IN p_nama_menu VARCHAR(255),
-    IN p_harga DECIMAL(10,2)
-)
-BEGIN
-    INSERT INTO menus (nama_menu, harga, status, created_at, updated_at)
-    VALUES (p_nama_menu, p_harga, 'Tersedia', NOW(), NOW());
+--
+-- Prosedur
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `cari_penjualan` (IN `p_tanggal` DATE)   BEGIN
+SELECT *
+FROM penjualan
+WHERE tanggal_penjualan=p_tanggal;
 END$$
 
-DROP PROCEDURE IF EXISTS tampil_penjualan$$
-CREATE PROCEDURE tampil_penjualan()
-BEGIN
-    SELECT
-        p.no_pesanan,
-        p.waktu_pemesanan,
-        p.nama_pelanggan,
-        p.total_penjualan
-    FROM penjualans p;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `tambah_menu` (IN `p_nama_menu` VARCHAR(100), IN `p_harga` DECIMAL(10,2))   BEGIN
+INSERT INTO menu(nama_menu,harga)
+VALUES(p_nama_menu,p_harga);
 END$$
 
-DROP PROCEDURE IF EXISTS tampil_pembelian$$
-CREATE PROCEDURE tampil_pembelian()
-BEGIN
-
-    SELECT
-        pb.id AS id_pembelian,
-        pb.tanggal_pembelian,
-        s.nama_supplier,
-        pg.nama_pegawai,
-        pb.total_pembelian
-    FROM pembelians pb
-    LEFT JOIN suppliers s ON pb.supplier_id = s.id
-    LEFT JOIN pegawais pg ON pb.pegawai_id = pg.id;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `tampil_pembelian` ()   BEGIN
+SELECT
+pb.id_pembelian,
+pb.tanggal_pembelian,
+s.nama_supplier,
+pg.nama_pegawai,
+pb.total_pembelian
+FROM pembelian pb
+JOIN supplier s
+ON pb.id_supplier=s.id_supplier
+JOIN pegawai pg
+ON pb.id_pegawai=pg.id_pegawai;
 END$$
 
-DROP PROCEDURE IF EXISTS cari_penjualan$$
-CREATE PROCEDURE cari_penjualan(
-    IN p_tanggal DATE
-)
-BEGIN
-    SELECT *
-    FROM penjualans
-    WHERE DATE(waktu_pemesanan) = p_tanggal;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `tampil_penjualan` ()   BEGIN
+SELECT
+p.id_penjualan,
+p.tanggal_penjualan,
+pg.nama_pegawai,
+p.total_penjualan
+FROM penjualan p
+JOIN pegawai pg
+ON p.id_pegawai=pg.id_pegawai;
 END$$
 
-DROP PROCEDURE IF EXISTS total_pendapatan$$
-CREATE PROCEDURE total_pendapatan()
-BEGIN
-    SELECT
-        SUM(total_penjualan) AS total_pendapatan
-    FROM penjualans;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `total_pendapatan` ()   BEGIN
+SELECT
+SUM(total_penjualan) AS total_pendapatan
+FROM penjualan;
 END$$
+
 DELIMITER ;
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `bahan_bakus`
+--
 
 CREATE TABLE `bahan_bakus` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -89,6 +84,9 @@ CREATE TABLE `bahan_bakus` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data untuk tabel `bahan_bakus`
+--
 
 INSERT INTO `bahan_bakus` (`id`, `nama_bahan`, `stok`, `satuan`, `created_at`, `updated_at`) VALUES
 (1, 'beras', 21, 'kg', '2026-07-30 01:52:18', '2026-07-30 20:19:33'),
@@ -99,6 +97,11 @@ INSERT INTO `bahan_bakus` (`id`, `nama_bahan`, `stok`, `satuan`, `created_at`, `
 (8, 'beras', 15, 'kg', '2026-07-30 20:18:50', '2026-07-30 20:18:50'),
 (9, 'tepung', 8, 'kg', '2026-07-30 20:26:50', '2026-07-30 20:26:50');
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `cache`
+--
 
 CREATE TABLE `cache` (
   `key` varchar(255) NOT NULL,
@@ -106,6 +109,11 @@ CREATE TABLE `cache` (
   `expiration` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `cache_locks`
+--
 
 CREATE TABLE `cache_locks` (
   `key` varchar(255) NOT NULL,
@@ -113,6 +121,11 @@ CREATE TABLE `cache_locks` (
   `expiration` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `detail_pembelians`
+--
 
 CREATE TABLE `detail_pembelians` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -125,7 +138,9 @@ CREATE TABLE `detail_pembelians` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `detail_pembelians`
+--
 
 INSERT INTO `detail_pembelians` (`id`, `pembelian_id`, `bahan_baku_id`, `jumlah`, `harga_satuan`, `subtotal`, `created_at`, `updated_at`) VALUES
 (1, 2, 3, 10, 25.00, 250.00, '2026-07-30 12:27:01', '2026-07-30 12:27:01'),
@@ -134,6 +149,11 @@ INSERT INTO `detail_pembelians` (`id`, `pembelian_id`, `bahan_baku_id`, `jumlah`
 (4, 5, 6, 6, 22000.00, 132000.00, '2026-07-30 12:31:35', '2026-07-30 12:31:35'),
 (5, 6, 3, 25, 29000.00, 725000.00, '2026-07-30 20:36:13', '2026-07-30 20:36:13');
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `detail_penjualans`
+--
 
 CREATE TABLE `detail_penjualans` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -148,7 +168,9 @@ CREATE TABLE `detail_penjualans` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `detail_penjualans`
+--
 
 INSERT INTO `detail_penjualans` (`id`, `penjualan_id`, `menu_id`, `jumlah`, `level_sambal`, `catatan`, `harga_satuan`, `subtotal`, `created_at`, `updated_at`) VALUES
 (2, 2, 1, 1, 'Sedang', NULL, 15000.00, 15000.00, '2026-07-29 23:41:56', '2026-07-29 23:41:56'),
@@ -159,8 +181,17 @@ INSERT INTO `detail_penjualans` (`id`, `penjualan_id`, `menu_id`, `jumlah`, `lev
 (7, 7, 1, 1, 'Sedang', NULL, 15000.00, 15000.00, '2026-07-30 00:13:23', '2026-07-30 00:13:23'),
 (8, 8, 1, 1, 'Sedang', NULL, 15000.00, 15000.00, '2026-07-30 00:25:29', '2026-07-30 00:25:29'),
 (9, 9, 1, 2, 'Pedas', 'sambal dipisah, dan ayamnya jangan di geprek', 10000.00, 20000.00, '2026-07-30 20:01:19', '2026-07-30 20:01:19'),
-(10, 10, 1, 1, 'Pedas', 'sambalnya banyakin ya', 10000.00, 10000.00, '2026-07-31 02:35:15', '2026-07-31 02:35:15');
+(10, 10, 1, 1, 'Pedas', 'sambalnya banyakin ya', 10000.00, 10000.00, '2026-07-31 02:35:15', '2026-07-31 02:35:15'),
+(11, 11, 1, 1, 'Sangat Pedas', NULL, 10000.00, 10000.00, '2026-07-31 07:01:06', '2026-07-31 07:01:06'),
+(12, 12, 1, 1, 'Sedang', 'sambal dipisah', 10000.00, 10000.00, '2026-07-31 10:15:49', '2026-07-31 10:15:49'),
+(13, 13, 1, 3, 'Pedas', 'satu sambal sedang, 2 lagi pedas', 10000.00, 30000.00, '2026-07-31 10:42:34', '2026-07-31 10:42:34'),
+(14, 14, 1, 3, 'Pedas', 'satu sambal sedang, 2 lagi pedas', 10000.00, 30000.00, '2026-07-31 10:43:16', '2026-07-31 10:43:16');
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `failed_jobs`
+--
 
 CREATE TABLE `failed_jobs` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -172,7 +203,11 @@ CREATE TABLE `failed_jobs` (
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `jobs`
+--
 
 CREATE TABLE `jobs` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -184,6 +219,11 @@ CREATE TABLE `jobs` (
   `created_at` int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `job_batches`
+--
 
 CREATE TABLE `job_batches` (
   `id` varchar(255) NOT NULL,
@@ -198,7 +238,11 @@ CREATE TABLE `job_batches` (
   `finished_at` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `menus`
+--
 
 CREATE TABLE `menus` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -211,12 +255,18 @@ CREATE TABLE `menus` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `menus`
+--
 
 INSERT INTO `menus` (`id`, `nama_menu`, `harga`, `foto`, `status`, `deskripsi`, `created_at`, `updated_at`) VALUES
 (1, 'Ayam Geprek Bu Emi', 10000.00, NULL, 'Tersedia', 'Ayam crispy dengan sambal khas Bu Emi yang pedas, gurih, dan dibuat menggunakan bahan-bahan segar setiap hari.', '2026-07-29 23:41:56', '2026-07-29 23:41:56');
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `migrations`
+--
 
 CREATE TABLE `migrations` (
   `id` int(10) UNSIGNED NOT NULL,
@@ -224,7 +274,9 @@ CREATE TABLE `migrations` (
   `batch` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `migrations`
+--
 
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (1, '0001_01_01_000000_create_users_table', 1),
@@ -241,6 +293,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (12, '2026_07_30_201426_create_pengaturans_table', 2),
 (13, '2026_07_30_201445_add_foto_and_status_to_menus_table', 2);
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `password_reset_tokens`
+--
 
 CREATE TABLE `password_reset_tokens` (
   `email` varchar(255) NOT NULL,
@@ -248,7 +305,11 @@ CREATE TABLE `password_reset_tokens` (
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `pegawais`
+--
 
 CREATE TABLE `pegawais` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -259,7 +320,11 @@ CREATE TABLE `pegawais` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `pembelians`
+--
 
 CREATE TABLE `pembelians` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -271,7 +336,9 @@ CREATE TABLE `pembelians` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `pembelians`
+--
 
 INSERT INTO `pembelians` (`id`, `pegawai_id`, `supplier_id`, `tanggal_pembelian`, `total_pembelian`, `created_at`, `updated_at`) VALUES
 (2, NULL, 1, '2026-07-30 19:27:01', 250.00, '2026-07-30 12:27:01', '2026-07-30 12:27:01'),
@@ -280,7 +347,11 @@ INSERT INTO `pembelians` (`id`, `pegawai_id`, `supplier_id`, `tanggal_pembelian`
 (5, NULL, 1, '2026-07-30 19:31:35', 132000.00, '2026-07-30 12:31:35', '2026-07-30 12:31:35'),
 (6, NULL, 1, '2026-07-31 03:36:13', 725000.00, '2026-07-30 20:36:13', '2026-07-30 20:36:13');
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `pengaturans`
+--
 
 CREATE TABLE `pengaturans` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -298,11 +369,18 @@ CREATE TABLE `pengaturans` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `pengaturans`
+--
 
 INSERT INTO `pengaturans` (`id`, `nama_kantin`, `nama_pemilik`, `alamat`, `link_gmaps`, `no_hp`, `jam_operasional`, `deskripsi_singkat`, `dana_nomor`, `dana_nama`, `dana_qr`, `created_at`, `updated_at`) VALUES
 (1, 'Kantin Bu Emi', 'Bu Emi', 'batuphat, lhokseumawe. sebelah zahra mart', NULL, '082174505204', 'senin - sabtu 09.00-22.00', NULL, '082174505204', 'dena', NULL, '2026-07-30 13:25:19', '2026-07-30 19:57:58');
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `penjualans`
+--
 
 CREATE TABLE `penjualans` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -319,7 +397,9 @@ CREATE TABLE `penjualans` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `penjualans`
+--
 
 INSERT INTO `penjualans` (`id`, `no_pesanan`, `nama_pelanggan`, `no_hp`, `metode_pembayaran`, `bukti_transfer`, `total_penjualan`, `status_pembayaran`, `status_pesanan`, `waktu_pemesanan`, `created_at`, `updated_at`) VALUES
 (1, 'ORD-20260730-7VRD', 'dena', '0821456789', NULL, NULL, 15000.00, 'Belum Dibayar', 'Menunggu Pembayaran', '2026-07-30 06:31:12', '2026-07-29 23:31:12', '2026-07-29 23:31:12'),
@@ -331,8 +411,17 @@ INSERT INTO `penjualans` (`id`, `no_pesanan`, `nama_pelanggan`, `no_hp`, `metode
 (7, 'ORD-20260730-QTXM', 'duta', '0825678456', NULL, NULL, 15000.00, 'Belum Dibayar', 'Menunggu Pembayaran', '2026-07-30 07:13:23', '2026-07-30 00:13:23', '2026-07-30 00:13:23'),
 (8, 'ORD-20260730-NOK0', 'duta', '0825678456', 'DANA', 'bukti_transfer/iZ18jy5Y08O8RnH6nKKH0EmQ2yY2y1Re17upRCfm.jpg', 15000.00, 'Menunggu Verifikasi', 'Selesai', '2026-07-30 07:25:29', '2026-07-30 00:25:29', '2026-07-30 00:47:59'),
 (9, 'ORD-20260731-EHZY', 'ririn', '0812987654321', 'DANA', 'bukti_transfer/0SxnYeHzlnLZKn9oBpKrkpuTuv2QZl6MxMp7UKED.png', 20000.00, 'Menunggu Verifikasi', 'Selesai', '2026-07-31 03:01:19', '2026-07-30 20:01:19', '2026-07-30 20:03:38'),
-(10, 'ORD-20260731-HFZZ', 'nisa', '082189765432', 'DANA', 'bukti_transfer/Vq6DDjGbRiWjTklzVc8qOtkFtA7bZyWWvMP5va23.jpg', 10000.00, 'Menunggu Verifikasi', 'Menunggu Diproses', '2026-07-31 09:35:15', '2026-07-31 02:35:15', '2026-07-31 02:35:34');
+(10, 'ORD-20260731-HFZZ', 'nisa', '082189765432', 'DANA', 'bukti_transfer/Vq6DDjGbRiWjTklzVc8qOtkFtA7bZyWWvMP5va23.jpg', 10000.00, 'Menunggu Verifikasi', 'Menunggu Diproses', '2026-07-31 09:35:15', '2026-07-31 02:35:15', '2026-07-31 02:35:34'),
+(11, 'ORD-20260731-B169', 'anggun', '08526543217', 'DANA', 'bukti_transfer/lfQc6qHRDu2jdNAM53bOQ3e8r4FzymWUBxla8p5p.png', 10000.00, 'Menunggu Verifikasi', 'Diproses', '2026-07-31 14:01:06', '2026-07-31 07:01:06', '2026-07-31 10:40:44'),
+(12, 'ORD-20260731-UMQR', 'anggun', '08526543217', 'DANA', 'bukti_transfer/5wcGvyq0mCzyOrbbXStLTKydQZgMc9CRz7v1GlAq.png', 10000.00, 'Menunggu Verifikasi', 'Diproses', '2026-07-31 17:15:49', '2026-07-31 10:15:49', '2026-07-31 10:40:16'),
+(13, 'ORD-20260731-32SF', 'siti khairunnisa', '08234567890', NULL, NULL, 30000.00, 'Belum Dibayar', 'Menunggu Pembayaran', '2026-07-31 17:42:34', '2026-07-31 10:42:34', '2026-07-31 10:42:34'),
+(14, 'ORD-20260731-Y1XK', 'siti khairunnisa', '08234567890', 'DANA', 'bukti_transfer/we4wfu0Snlp1onkdIfdVKBY68Zoz9CbrStMvZr9H.png', 30000.00, 'Menunggu Verifikasi', 'Menunggu Diproses', '2026-07-31 17:43:16', '2026-07-31 10:43:16', '2026-07-31 10:51:19');
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `sessions`
+--
 
 CREATE TABLE `sessions` (
   `id` varchar(255) NOT NULL,
@@ -343,6 +432,12 @@ CREATE TABLE `sessions` (
   `last_activity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `suppliers`
+--
+
 CREATE TABLE `suppliers` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `nama_supplier` varchar(255) NOT NULL,
@@ -352,12 +447,18 @@ CREATE TABLE `suppliers` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+--
+-- Dumping data untuk tabel `suppliers`
+--
 
 INSERT INTO `suppliers` (`id`, `nama_supplier`, `alamat`, `no_hp`, `created_at`, `updated_at`) VALUES
 (1, 'Pajak Impres', 'Pasar Pajak Impres', '-', '2026-07-30 09:16:11', '2026-07-30 09:16:11');
 
+-- --------------------------------------------------------
 
+--
+-- Struktur dari tabel `users`
+--
 
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
@@ -370,11 +471,19 @@ CREATE TABLE `users` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data untuk tabel `users`
+--
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
 (1, 'Admin Utama', 'admin@kantinbuemi.com', NULL, '$2y$12$MaXqbdXYE.ojifm.eJc4..kqaxVGrIrVaK31yZkFZWqTPLJWkUfM.', NULL, '2026-07-30 13:30:40', '2026-07-30 13:30:40');
 
+-- --------------------------------------------------------
 
+--
+-- Stand-in struktur untuk tampilan `view_detail_penjualan`
+-- (Lihat di bawah untuk tampilan aktual)
+--
 CREATE TABLE `view_detail_penjualan` (
 `id_detail_penjualan` bigint(20) unsigned
 ,`nama_menu` varchar(255)
@@ -382,14 +491,24 @@ CREATE TABLE `view_detail_penjualan` (
 ,`subtotal` decimal(12,2)
 );
 
+-- --------------------------------------------------------
 
+--
+-- Stand-in struktur untuk tampilan `view_laporan_penjualan`
+-- (Lihat di bawah untuk tampilan aktual)
+--
 CREATE TABLE `view_laporan_penjualan` (
 `tanggal_penjualan` date
 ,`jumlah_transaksi` bigint(21)
 ,`total_pendapatan` decimal(34,2)
 );
 
+-- --------------------------------------------------------
 
+--
+-- Stand-in struktur untuk tampilan `view_pembelian`
+-- (Lihat di bawah untuk tampilan aktual)
+--
 CREATE TABLE `view_pembelian` (
 `id_pembelian` bigint(20) unsigned
 ,`tanggal_pembelian` datetime
@@ -398,7 +517,12 @@ CREATE TABLE `view_pembelian` (
 ,`total_pembelian` decimal(12,2)
 );
 
+-- --------------------------------------------------------
 
+--
+-- Stand-in struktur untuk tampilan `view_penjualan`
+-- (Lihat di bawah untuk tampilan aktual)
+--
 CREATE TABLE `view_penjualan` (
 `id_penjualan` bigint(20) unsigned
 ,`tanggal_penjualan` datetime
@@ -406,7 +530,12 @@ CREATE TABLE `view_penjualan` (
 ,`total_penjualan` decimal(12,2)
 );
 
+-- --------------------------------------------------------
 
+--
+-- Stand-in struktur untuk tampilan `view_stok_bahan`
+-- (Lihat di bawah untuk tampilan aktual)
+--
 CREATE TABLE `view_stok_bahan` (
 `id_bahan` bigint(20) unsigned
 ,`nama_bahan` varchar(255)
@@ -414,173 +543,281 @@ CREATE TABLE `view_stok_bahan` (
 ,`stok` int(11)
 );
 
+-- --------------------------------------------------------
 
+--
+-- Struktur untuk view `view_detail_penjualan`
+--
 DROP TABLE IF EXISTS `view_detail_penjualan`;
 
-CREATE VIEW view_detail_penjualan AS
-SELECT dp.id AS id_detail_penjualan, m.nama_menu AS nama_menu, dp.jumlah AS jumlah, dp.subtotal AS subtotal
-FROM detail_penjualans dp
-JOIN menus m ON dp.menu_id = m.id;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_detail_penjualan`  AS SELECT `dp`.`id` AS `id_detail_penjualan`, `m`.`nama_menu` AS `nama_menu`, `dp`.`jumlah` AS `jumlah`, `dp`.`subtotal` AS `subtotal` FROM (`detail_penjualans` `dp` join `menus` `m` on(`dp`.`menu_id` = `m`.`id`)) ;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur untuk view `view_laporan_penjualan`
+--
 DROP TABLE IF EXISTS `view_laporan_penjualan`;
 
-CREATE VIEW view_laporan_penjualan AS
-SELECT CAST(penjualans.waktu_pemesanan AS DATE) AS tanggal_penjualan, COUNT(penjualans.id) AS jumlah_transaksi, SUM(penjualans.total_penjualan) AS total_pendapatan
-FROM penjualans
-GROUP BY CAST(penjualans.waktu_pemesanan AS DATE);
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_laporan_penjualan`  AS SELECT cast(`penjualans`.`waktu_pemesanan` as date) AS `tanggal_penjualan`, count(`penjualans`.`id`) AS `jumlah_transaksi`, sum(`penjualans`.`total_penjualan`) AS `total_pendapatan` FROM `penjualans` GROUP BY cast(`penjualans`.`waktu_pemesanan` as date) ;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur untuk view `view_pembelian`
+--
 DROP TABLE IF EXISTS `view_pembelian`;
 
-CREATE VIEW view_pembelian AS
-SELECT pb.id AS id_pembelian, pb.tanggal_pembelian AS tanggal_pembelian, s.nama_supplier AS nama_supplier, pg.nama_pegawai AS nama_pegawai, pb.total_pembelian AS total_pembelian
-FROM pembelians pb
-LEFT JOIN suppliers s ON pb.supplier_id = s.id
-LEFT JOIN pegawais pg ON pb.pegawai_id = pg.id;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_pembelian`  AS SELECT `pb`.`id` AS `id_pembelian`, `pb`.`tanggal_pembelian` AS `tanggal_pembelian`, `s`.`nama_supplier` AS `nama_supplier`, `pg`.`nama_pegawai` AS `nama_pegawai`, `pb`.`total_pembelian` AS `total_pembelian` FROM ((`pembelians` `pb` left join `suppliers` `s` on(`pb`.`supplier_id` = `s`.`id`)) left join `pegawais` `pg` on(`pb`.`pegawai_id` = `pg`.`id`)) ;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur untuk view `view_penjualan`
+--
 DROP TABLE IF EXISTS `view_penjualan`;
 
-CREATE VIEW view_penjualan AS
-SELECT p.id AS id_penjualan, p.waktu_pemesanan AS tanggal_penjualan, 'Admin' AS nama_pegawai, p.total_penjualan AS total_penjualan
-FROM penjualans AS p;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_penjualan`  AS SELECT `p`.`id` AS `id_penjualan`, `p`.`waktu_pemesanan` AS `tanggal_penjualan`, 'Admin' AS `nama_pegawai`, `p`.`total_penjualan` AS `total_penjualan` FROM `penjualans` AS `p` ;
 
+-- --------------------------------------------------------
 
+--
+-- Struktur untuk view `view_stok_bahan`
+--
 DROP TABLE IF EXISTS `view_stok_bahan`;
 
-CREATE VIEW view_stok_bahan AS
-SELECT bahan_bakus.id AS id_bahan, bahan_bakus.nama_bahan AS nama_bahan, bahan_bakus.satuan AS satuan, bahan_bakus.stok AS stok
-FROM bahan_bakus;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_stok_bahan`  AS SELECT `bahan_bakus`.`id` AS `id_bahan`, `bahan_bakus`.`nama_bahan` AS `nama_bahan`, `bahan_bakus`.`satuan` AS `satuan`, `bahan_bakus`.`stok` AS `stok` FROM `bahan_bakus` ;
 
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indeks untuk tabel `bahan_bakus`
+--
 ALTER TABLE `bahan_bakus`
   ADD PRIMARY KEY (`id`);
 
-
+--
+-- Indeks untuk tabel `cache`
+--
 ALTER TABLE `cache`
   ADD PRIMARY KEY (`key`),
   ADD KEY `cache_expiration_index` (`expiration`);
 
-
+--
+-- Indeks untuk tabel `cache_locks`
+--
 ALTER TABLE `cache_locks`
   ADD PRIMARY KEY (`key`),
   ADD KEY `cache_locks_expiration_index` (`expiration`);
 
+--
+-- Indeks untuk tabel `detail_pembelians`
+--
 ALTER TABLE `detail_pembelians`
   ADD PRIMARY KEY (`id`),
   ADD KEY `detail_pembelians_pembelian_id_foreign` (`pembelian_id`),
   ADD KEY `detail_pembelians_bahan_baku_id_foreign` (`bahan_baku_id`);
 
+--
+-- Indeks untuk tabel `detail_penjualans`
+--
 ALTER TABLE `detail_penjualans`
   ADD PRIMARY KEY (`id`),
   ADD KEY `detail_penjualans_penjualan_id_foreign` (`penjualan_id`),
   ADD KEY `detail_penjualans_menu_id_foreign` (`menu_id`);
 
+--
+-- Indeks untuk tabel `failed_jobs`
+--
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`),
   ADD KEY `failed_jobs_connection_queue_failed_at_index` (`connection`,`queue`,`failed_at`);
 
-
+--
+-- Indeks untuk tabel `jobs`
+--
 ALTER TABLE `jobs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `jobs_queue_index` (`queue`);
 
+--
+-- Indeks untuk tabel `job_batches`
+--
 ALTER TABLE `job_batches`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indeks untuk tabel `menus`
+--
 ALTER TABLE `menus`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indeks untuk tabel `migrations`
+--
 ALTER TABLE `migrations`
   ADD PRIMARY KEY (`id`);
 
-
+--
+-- Indeks untuk tabel `password_reset_tokens`
+--
 ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
 
+--
+-- Indeks untuk tabel `pegawais`
+--
 ALTER TABLE `pegawais`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indeks untuk tabel `pembelians`
+--
 ALTER TABLE `pembelians`
   ADD PRIMARY KEY (`id`),
   ADD KEY `pembelians_pegawai_id_foreign` (`pegawai_id`),
   ADD KEY `pembelians_supplier_id_foreign` (`supplier_id`);
 
-
+--
+-- Indeks untuk tabel `pengaturans`
+--
 ALTER TABLE `pengaturans`
   ADD PRIMARY KEY (`id`);
 
-
+--
+-- Indeks untuk tabel `penjualans`
+--
 ALTER TABLE `penjualans`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `penjualans_no_pesanan_unique` (`no_pesanan`);
 
-
+--
+-- Indeks untuk tabel `sessions`
+--
 ALTER TABLE `sessions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `sessions_user_id_index` (`user_id`),
   ADD KEY `sessions_last_activity_index` (`last_activity`);
 
+--
+-- Indeks untuk tabel `suppliers`
+--
 ALTER TABLE `suppliers`
   ADD PRIMARY KEY (`id`);
 
+--
+-- Indeks untuk tabel `users`
+--
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_unique` (`email`);
 
+--
+-- AUTO_INCREMENT untuk tabel yang dibuang
+--
+
+--
+-- AUTO_INCREMENT untuk tabel `bahan_bakus`
+--
 ALTER TABLE `bahan_bakus`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
+--
+-- AUTO_INCREMENT untuk tabel `detail_pembelians`
+--
 ALTER TABLE `detail_pembelians`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
+--
+-- AUTO_INCREMENT untuk tabel `detail_penjualans`
+--
 ALTER TABLE `detail_penjualans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
-
+--
+-- AUTO_INCREMENT untuk tabel `failed_jobs`
+--
 ALTER TABLE `failed_jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
+--
+-- AUTO_INCREMENT untuk tabel `jobs`
+--
 ALTER TABLE `jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
+--
+-- AUTO_INCREMENT untuk tabel `menus`
+--
 ALTER TABLE `menus`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
-
+--
+-- AUTO_INCREMENT untuk tabel `migrations`
+--
 ALTER TABLE `migrations`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
+--
+-- AUTO_INCREMENT untuk tabel `pegawais`
+--
 ALTER TABLE `pegawais`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
+--
+-- AUTO_INCREMENT untuk tabel `pembelians`
+--
 ALTER TABLE `pembelians`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
-
+--
+-- AUTO_INCREMENT untuk tabel `pengaturans`
+--
 ALTER TABLE `pengaturans`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
+--
+-- AUTO_INCREMENT untuk tabel `penjualans`
+--
 ALTER TABLE `penjualans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
+--
+-- AUTO_INCREMENT untuk tabel `suppliers`
+--
 ALTER TABLE `suppliers`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
-
+--
+-- AUTO_INCREMENT untuk tabel `users`
+--
 ALTER TABLE `users`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
+--
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+--
 
+--
+-- Ketidakleluasaan untuk tabel `detail_pembelians`
+--
 ALTER TABLE `detail_pembelians`
   ADD CONSTRAINT `detail_pembelians_bahan_baku_id_foreign` FOREIGN KEY (`bahan_baku_id`) REFERENCES `bahan_bakus` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `detail_pembelians_pembelian_id_foreign` FOREIGN KEY (`pembelian_id`) REFERENCES `pembelians` (`id`) ON DELETE CASCADE;
 
+--
+-- Ketidakleluasaan untuk tabel `detail_penjualans`
+--
 ALTER TABLE `detail_penjualans`
   ADD CONSTRAINT `detail_penjualans_menu_id_foreign` FOREIGN KEY (`menu_id`) REFERENCES `menus` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `detail_penjualans_penjualan_id_foreign` FOREIGN KEY (`penjualan_id`) REFERENCES `penjualans` (`id`) ON DELETE CASCADE;
 
+--
+-- Ketidakleluasaan untuk tabel `pembelians`
+--
 ALTER TABLE `pembelians`
   ADD CONSTRAINT `pembelians_pegawai_id_foreign` FOREIGN KEY (`pegawai_id`) REFERENCES `pegawais` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `pembelians_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL;
